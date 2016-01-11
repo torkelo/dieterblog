@@ -77,8 +77,9 @@ But a low number of nulls in a large sum is usually not a big deal and having a
 result with the nulls counted as 0 can be more useful than no result at all.
 Especially when averaging, since those points can typically be safely excluded 
 without impact on the output.
-When Graphite performs storage aggregation (rollups), it allows allowing a 
-certain fraction of null values, configured through xFilesFactor,
+When Graphite performs storage aggregation (rollups), it can be configured to allow a 
+certain fraction of null values. You control the allowed fraction via the xFilesFactor in the 
+storage-aggregation.conf file. 
 It would be nice if these on-demand math requests would take an xFilesFactor 
 argument to do the same thing.
 But for now, just be aware of it, not using the last point is usually all you 
@@ -101,8 +102,8 @@ looks for throughput drops, it would trigger here.
 
 For some functions like avg, a missing value amongst several valid values is 
 usually not a big deal, but the likeliness of it becoming a big deal increases 
-with the amount of nulls,
-so I think here we should also implement an xFilesFactor.
+with the amount of nulls. So for query point consolidation graphite needs 
+something similar to the xFilesFactor setting.
 
 
 4) consolidation &amp; aggregation confusion
@@ -244,6 +245,9 @@ interval is adjusted to get the timestamp at the beginning of the interval.
 Furthermore, during aggregation (say, aggregating 10 minutely points into 10min 
 points), each 10 minutes taken together get assigned the timestamp that precedes 
 those 10 intervals.
+> Torkel's comment
+> wont the get the timestgamp of the first 1min point?  
+
 So essentially, graphite likes to show metric values before they actually 
 happened, especially after aggregation, whereas other tools rather use a 
 timestamp that is too late rather than too soon.  As a monitoring community, we 
@@ -258,6 +262,8 @@ The type is just named "timing" because that was the original (and still most
 common) use case.
 Note that if you want to time an operation that happens at consistent intervals, 
 you may just as well simply use a statsd gauge for it.
+> Torkel's comment
+> Great point, always used statsd timing for much more than performance measurement (usually when I wanted percentiles)
 
 11) the choice of metric keys you can use depends on how you deployed your 
 statsd's
@@ -271,6 +277,10 @@ So if you run a statsd server per host, you should include the host in your
 keys.
 
 Takeaway: don't send the same key to multiple statsd servers
+> Torkel's comment
+> Not sure that's the takeaway. Never send the same key to graphite for different metrics
+> I mean you can send the same key to two different statsd servers as long as the statsd server
+> includes a server prefix in the metric names sent to graphite (as you mention above)
 
 12) statsd is "fire and forget" &amp; udp sends "have no overhead".
 
@@ -513,3 +523,5 @@ see <a
 href="https://github.com/etsy/statsd/blob/master/docs/graphite.md">this</a> for 
 more details.
 
+> Torkel's comment
+> Great post filled with great learnings!
